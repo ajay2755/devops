@@ -1,0 +1,9 @@
+rundeck:
+  nonprod_rundeck_url: https://uasg1004.sg1.sparksystems.sg:4443/api/21
+  prod_rundeck_url: https://pmsg1004.sg1.sparksystems.sg:4443/api/21
+  artifactory_path: https://PISG1050.sg1.sparksystems.sg/artifactory/rundeck-export-artifacts
+  X-Rundeck-Auth-Token: <RUNDECK-API-TOKEN>
+  Prod-X-Rundeck-Auth-Token: <RUNDECK-API-TOKEN>
+  artifactory_api_key: <ARTIFACTORY-API-KEY>
+  
+

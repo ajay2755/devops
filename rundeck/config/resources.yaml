@@ -1,0 +1,23 @@
+EXECUTOR-NODE[tasg1011.sg1.sparksystems.sg]:
+  description: Remote SSH server node
+  hostname: tasg1011.sg1.sparksystems.sg
+  nodename: TASG1011-NODE
+  osArch: amd64
+  osFamily: unix
+  osName: Linux
+  tags: 'Executor-Node'
+  osVersion: 4.18.0-425.3.1.el8.x86_64
+  username: 'rundeck'
+  ssh-key-storage-path: keys/project/TEST/TASG1011
+
+DEV-GATEWAY-NODE[dasgf001.sgf.sparksystems.sg]:
+  description: Remote SSH server node
+  hostname: dasgf001.sgf.sparksystems.sg
+  nodename: DASGF001-NODE
+  osArch: amd64
+  osFamily: unix
+  osName: Linux
+  tags: 'Gateway-Node'
+  osVersion: 4.18.0-425.3.1.el8.x86_64
+  username: 'rundeck'
+  ssh-key-storage-path: keys/project/TEST/DASGF001

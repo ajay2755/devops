@@ -1,0 +1,6 @@
+Github:
+  get_all_organisation_repos_api: https://api.github.com/orgs/{organisation}/repos
+  github_personal_access_token: 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
+  organisation_name: Spark-Systems-Test
+  github_ssh_base_url: git@github.com:{full_name}.git
+  backup_repo_directory: Github_Backup

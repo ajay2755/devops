@@ -1,0 +1,18 @@
+sonarcloud:
+  add_to_group_url: https://sonarcloud.io/api/user_groups/add_user
+  bearer_token: <bearer_token>
+  organization: <sonarcloud_organization>
+
+artifactory:
+  create_user_url: https://a0wwg44myclsi.jfrog.io/access/api/v2/users
+  delete_user_url: https://a0wwg44myclsi.jfrog.io/access/api/v2/users/{username}
+  bearer_token: <bearer_token>
+  passwords_store: passwords.txt
+
+github:
+  invite_to_org_url: https://api.github.com/orgs/{organization_name}/invitations
+  invite_to_repo_url: https://api.github.com/repos/{organization_name}/{repo_name}/collaborators/{username}
+  remove_from_org_url: https://api.github.com/orgs/{organization_name}/members/{username}
+  auth_token: <auth_token>
+  organization: <github_organization_name>
+

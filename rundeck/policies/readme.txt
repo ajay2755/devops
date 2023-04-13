@@ -1,0 +1,5 @@
+#Rundeck policy groups
+rundeck_administrators
+rundeck_read_write_execute_create
+rundeck_read
+rundeck_read_execute

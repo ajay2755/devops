@@ -1,0 +1,6 @@
+artifactory:
+  create_user_url: https://artifactory.sparksystems.sg:8181/access/api/v2/users
+  delete_user_url: https://artifactory.sparksystems.sg:8181/access/api/v2/users/{username}
+  bearer_token: <Artifactory bearer toekn>
+  passwords_store: passwords.txt
+

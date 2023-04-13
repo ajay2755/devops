@@ -1,0 +1,12 @@
+Artifactory:
+  Target_Repo: "<Enter the target repo in artifactory that you want to push the local artifacts to.>"
+  Server_Id: "Artifactory Server Name"
+
+Nexus:
+  Download_Artifact_Assets_API: "http://spdvsgf001:8081/service/rest/beta/search/assets?repository={repo}&group={group}&name={name}&version={version}"
+  Download_Artifact_Path_API: "http://spdvsgf001:8081/service/rest/beta/components?repository={repo}"
+  Download_Artifact_Path_Continue_API: "http://spdvsgf001:8081/service/rest/beta/components?continuationToken={continuationToken}&repository={repo}"
+
+Directories:
+  Input_Folder: ./RepositoryNameFolder
+  Artifact_Downloads_Folder: /Artifacts

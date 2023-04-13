@@ -1,0 +1,4 @@
+github_authentication_token: <Github personal authentication token>
+github_organisation_name: Spark-Systems-Test
+projects_to_migrate_filepath: ./projectsToMigrate.txt
+github_create_org_repo_api: "https://api.github.com/orgs/{github_organisation_name}/repos"
