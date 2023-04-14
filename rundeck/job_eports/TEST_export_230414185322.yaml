@@ -1,0 +1,963 @@
+- defaultTab: nodes
+  description: Create new branch on Github repo(s)
+  executionEnabled: true
+  group: Development
+  id: 7a3f5615-9ac8-4b3d-a874-d73488eb3fbe
+  loglevel: INFO
+  name: Create New Branch
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: EXECUTOR-NODE[tasg1011.sg1.sparksystems.sg]
+  nodesSelectedByDefault: true
+  options:
+  - hidden: true
+    name: GithubToken
+    required: true
+    secure: true
+    storagePath: keys/project/TEST/GithubOrg
+    valueExposed: true
+  - hidden: true
+    name: GithubOrg
+    required: true
+    secure: true
+    storagePath: keys/project/TEST/GithubOrg
+    valueExposed: true
+  - delimiter: ' '
+    enforced: true
+    label: Repositories
+    multivalued: true
+    name: Repositories
+    required: true
+    valuesUrl: http://tasg1011.sg1.sparksystems.sg:8888/repositories?github_token=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&github_org=Spark-Systems-Test
+  - description: 'For FE / RC, specify source branch. For PA, specify source tag.'
+    label: Source branch / tag
+    name: Source
+    required: true
+  - enforced: true
+    label: Target branch type
+    name: TargetBranchType
+    required: true
+    values:
+    - FE - Feature
+    - RC - Release Candidate
+    - PA - Patch
+    valuesListDelimiter: ','
+  - description: 'Specify 1 or 2 digits, e.g. 08'
+    label: Target branch release no.
+    name: TargetBranchRelease
+    regex: '[0-9]{1,2}'
+    required: true
+  - description: 'Optional: suffix to append to target branch name'
+    label: Target branch suffix
+    name: TargetSuffix
+  - enforced: true
+    label: Increment target version
+    name: IncrementVersion
+    required: true
+    values:
+    - '-'
+    - Major
+    - Minor
+    - Patch
+    valuesListDelimiter: ','
+  - hidden: true
+    name: ScriptPath
+    required: true
+    value: scripts/GithubNewBranch.py
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - exec: python3 ${option.ScriptPath} ${option.GithubToken} ${option.GithubOrg}
+        ${option.Repositories} ${option.Source} ${option.TargetBranchType} ${option.TargetBranchRelease}
+        ${option.IncrementVersion} ${option.TargetSuffix}
+    keepgoing: false
+    strategy: node-first
+  uuid: 7a3f5615-9ac8-4b3d-a874-d73488eb3fbe
+- defaultTab: nodes
+  description: Deploy applications to respective servers
+  executionEnabled: true
+  group: Deployment
+  id: 2d51d0c3-a64b-47d8-98ba-349424abea14
+  loglevel: INFO
+  name: Deploy Application
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: ${option.ServerType}-${option.ApplicationType}.*
+  nodesSelectedByDefault: true
+  options:
+  - enforced: true
+    label: Server Type
+    name: ServerType
+    required: true
+    values:
+    - DEV
+    - OTHER
+    valuesListDelimiter: ','
+  - enforced: true
+    label: Application Type
+    name: ApplicationType
+    values:
+    - ENGINE
+    - GUI
+    - GATEWAY
+    - SERVICE PROXY
+    valuesListDelimiter: ','
+  - label: Application Name
+    name: ApplicationName
+    required: true
+  - label: Application Version
+    name: ApplicationVersion
+    required: true
+  - description: |-
+      List of services to deploy. Separate each service by a ```,```\
+      Example: ```FirstService, SecondService, ThirdService```\
+      By default, leaving this option empty will deploy all services of the application
+    label: Service Name
+    name: ServiceName
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - args: ${option.ApplicationType} ${option.ApplicationName} ${option.ApplicationVersion}
+        ${option.ServiceName}
+      fileExtension: py
+      interpreterArgsQuoted: false
+      script: "import sys\nimport requests\nimport os\nimport subprocess\nimport glob\n\
+        \n# Constants\nGATEWAY_DEPLOY_TEST_DIR = \"/home/rundeck/gatewaydeploytest/app/barclaysmarket\"\
+        \ #targetFolder\nGATEWAY_LOG_TEST_DIR = \"/home/rundeck/gatewaydeploytest/log/barclaysmarket\"\
+        \    #logFolder\nGATEWAY_PACKAGE_DEFAULT_PREFIX = \"marketmodel\"\nGATEWAY_PACKAGE_DEFAULT_SUFFIX\
+        \ = \"spark_dev_application.zip\"\nCURRENT_SYMLINK = \"current\"\nDEFAULT_DEV_ENV\
+        \ = \"dev\"\nDEFAULT_GATEWAY_CLIENT = \"org\"\nDEFAULT_GATEWAY_ASSET_CLASS\
+        \ = \"fx\"\nDEFAULT_TARGET_SERVER = \"dasgf001.sgf.sparksystems.sg\"\nDEFAULT_SERVICE_CONTEXT\
+        \ = \"dev:org:fx:.*:dasgf001.sgf.sparksystems.sg\"\nCLEAN_UP_PRESERVE_COUNT\
+        \ = 3\n# Using a default list for now, will replace with json file containing\
+        \ list of all services\nSERVICE_LIST = [\n    \"barclaysSGMarketService\"\
+        , \n    \"barclaysRFSSGMarketService\", \n    \"barclaysRFSMarketService\"\
+        , \n    \"barclaysNDFFASGMarketService\", \n    \"barclaysNDFFAMarketService\"\
+        , \n    \"barclaysMarketService\", \n    \"barclaysForwardFASGMarketService\"\
+        , \n    \"barclaysForwardFAMarketService\", \n    \"barclaysFASGMarketService\"\
+        , \n    \"barclaysFASG2MarketService\", \n    \"barclaysFAMarketService\"\
+        , \n    \"barclaysFA2MarketService\"\n] \n\ndef is_valid_services(service_list):\n\
+        \    \"\"\"\n    Validates service provided by user against list of services\n\
+        \    \"\"\"\n    return all(service in SERVICE_LIST for service in service_list)\n\
+        \ndef get_services(service_name):\n    \"\"\"\n    Parses service_name string\
+        \ and returns a list of service name\n    \"\"\"\n    return [service.strip()\
+        \ for service in service_name.split(',')]\n\ndef clean_up_directory(gateway_name):\n\
+        \    \"\"\"\n    Clean up directory by removing selected previous deployments\n\
+        \    \"\"\"\n    try:\n        ls_command = \"ls -t1c\"\n        ls_result\
+        \ = subprocess.run(ls_command, shell=True, stdout=subprocess.PIPE, check=True)\n\
+        \n        grep_command = f\"grep {gateway_name}\"\n        grep_result = subprocess.run(grep_command,\
+        \ shell=True, stdout=subprocess.PIPE, check=True, input=ls_result.stdout)\n\
+        \n        sed_command = \"sed 's/$/\\\\//'\"        \n        sed_result =\
+        \ subprocess.run(sed_command, shell=True, stdout=subprocess.PIPE, check=True,\
+        \ input=grep_result.stdout)\n\n        deployed_projects = sed_result.stdout.strip().decode(\"\
+        utf-8\").replace(\"\\n\", \"\").split(\"/\")\n\n        if deployed_projects[-1]\
+        \ == \"\":\n            deployed_projects.pop(-1)\n        \n        for i\
+        \ in range(CLEAN_UP_PRESERVE_COUNT):\n            deployed_projects.pop(0)\n\
+        \n        rm_command = \"rm -rf \"\n        for dir in deployed_projects:\n\
+        \            rm_command += dir.strip() + \" \"\n\n        subprocess.run(rm_command,\
+        \ shell=True)\n\n    except Exception as e:\n        raise Exception(f\"Failed\
+        \ to clean up directory: {e}\")\n\ndef move_logs(gateway_name, gateway_version):\n\
+        \    \"\"\"\n    Move previous version logs to new folder\n    \"\"\"\n  \
+        \  try:\n        if os.path.islink(\"current/logs\") and os.path.exists(\"\
+        current/logs\"):\n            print(\"entered\")\n            extract_real_path_process\
+        \ = subprocess.run([\"readlink\", \"-f\", \"current/logs\"], stdout=subprocess.PIPE)\n\
+        \            real_path = extract_real_path_process.stdout.strip().decode(\"\
+        utf-8\") \n            subfix = generate_timestamp()\n            updated_name\
+        \ = f\"{GATEWAY_LOG_TEST_DIR}/{gateway_name}-{gateway_version}-{subfix}\"\n\
+        \            subprocess.run([\"mv\", real_path, f\"{updated_name}\"], check=True)\n\
+        \n            subprocess.run([\"rm\", \"current/logs\"], check=True)\n\n \
+        \           subprocess.run([\"ln\", \"-s\", f\"{updated_name}\", \"current/logs\"\
+        ], check=True)\n    except Exception as e:\n        raise Exception(f\"Failed\
+        \ to move logs: {e}\")\n\ndef generate_timestamp():\n    \"\"\"\n    Get current\
+        \ timestamp string\n    \"\"\"\n    command = ['bash', '-c', 'eval date +%Y%m%d%H%M%S']\n\
+        \    output = subprocess.check_output(command).decode('utf-8').strip()\n \
+        \   return output\n\ndef update_service_symlink(target):\n    \"\"\"\n   \
+        \ Updates symlink to point to new application version services and make bin\
+        \ executable\n    \"\"\"\n    try:\n        if os.path.islink(CURRENT_SYMLINK):\n\
+        \            subprocess.run([\"rm\", CURRENT_SYMLINK], check=True)\n     \
+        \       subprocess.run([\"ln\", \"-s\", target, CURRENT_SYMLINK])\n\n    \
+        \        # Get a list of all shell scripts in bin folder\n            file_paths\
+        \ = glob.glob(\"current/bin/*\")\n\n            command = [\"chmod\", \"700\"\
+        ] + file_paths\n            subprocess.run(command)\n\n    except Exception\
+        \ as e:\n        raise Exception(f\"Failed to update service symbolic link:\
+        \ {e}\")\n\ndef update_logs_symlink(gateway_name, gateway_version):\n    \"\
+        \"\"\n    Updates symlink to point to new application version logs\n    \"\
+        \"\"\n    try:\n        subprocess.run([\"rm\", \"-r\", \"current/logs\"])\n\
+        \n        target_log_dir = f\"{GATEWAY_LOG_TEST_DIR}/{gateway_name}-{gateway_version}\"\
+        \n        if os.path.exists(target_log_dir):\n            subprocess.run([\"\
+        rm\", \"-r\", target_log_dir])\n\n        subprocess.run([\"mkdir\", target_log_dir])\n\
+        \        subprocess.run([\"ln\", \"-s\", target_log_dir, \"current/logs\"\
+        ])\n\n        if os.path.islink(f\"{GATEWAY_LOG_TEST_DIR}/current\"):\n  \
+        \          subprocess.run([\"rm\", f\"{GATEWAY_LOG_TEST_DIR}/current\"])\n\
+        \        subprocess.run([\"ln\", \"-s\", f\"{gateway_name}-{gateway_version}\"\
+        , f\"{GATEWAY_LOG_TEST_DIR}/current\"])\n\n    except Exception as e:\n  \
+        \      raise Exception(f\"Failed to update logs symbolic link: {e}\")\n\n\n\
+        def set_cwd(target_path):\n    \"\"\"\n    Sets current working directory\
+        \ to target path\n    \"\"\"\n    try:\n        os.chdir(target_path)\n  \
+        \  except Exception as e:\n        raise Exception(f\"Failed to set current\
+        \ working directory: {e}\")\n\ndef update_package_permission(zipped_package):\n\
+        \    \"\"\"\n    Sets permission for zipped package\n    \"\"\"\n    try:\n\
+        \        subprocess.run([\"chmod\", \"a+rw\", zipped_package])\n    except\
+        \ Exception as e:\n        raise Exception(f\"Failed to update package permissions:\
+        \ {e}\")\n\ndef update_config_file(application_version):\n    \"\"\"\n   \
+        \ Updates config file \n    \"\"\"\n    if os.path.islink(CURRENT_SYMLINK):\n\
+        \        try:\n            # get all .sh files in the current directory\n\
+        \            sh_files = glob.glob(\"current/bin/*.sh\")\n\n            # stop\
+        \ all .sh scripts\n            for file_path in sh_files:\n\n            \
+        \    app_name = file_path[12:-3]\n                context = app_name.lower()\n\
+        \                if \"Service\" in app_name:\n                    # Update\
+        \ service context\n                    command = [\"sed\", f\"/-DserviceContext=/s/-DserviceContext=.*/-DserviceContext={DEFAULT_DEV_ENV}:{DEFAULT_GATEWAY_CLIENT}:{DEFAULT_GATEWAY_ASSET_CLASS}:{context}:{DEFAULT_TARGET_SERVER}/\"\
+        , f\"current/conf/{app_name}.conf\"]\n                    with open(\"current/conf/tmp.conf\"\
+        , \"w\") as outfile:\n                        subprocess.run(command, stdout=outfile)\n\
+        \n\n                    # Update app version\n                    command\
+        \ = [\"sed\", f\"/-DsparkAppVersion=/s/-DsparkAppVersion=.*/-DsparkAppVersion={application_version}/\"\
+        , f\"current/conf/tmp.conf\"]\n                    with open(\"current/conf/tmp2.conf\"\
+        , \"w\") as outfile:\n                        subprocess.run(command, stdout=outfile)\n\
+        \n                    # Update app config file and remove temp file\n    \
+        \                command = [\"cp\", \"current/conf/tmp2.conf\", f\"current/conf/{app_name}.conf\"\
+        ]\n                    subprocess.run(command)\n                    files_to_remove\
+        \ = [\"current/conf/tmp.conf\", \"current/conf/tmp2.conf\"]\n            \
+        \        command = [\"rm\"] + files_to_remove\n                    subprocess.run(command)\n\
+        \n        except Exception as e:\n            raise Exception(f\"Failed to\
+        \ update config file: {e}\")\n    else:\n        print(\"Error: file '{}'\
+        \ is not a symbolic link\".format(CURRENT_SYMLINK))\n\ndef start_services(service_list):\n\
+        \    \"\"\"\n    Start all required shell scripts in new gateway version\n\
+        \    \"\"\"\n    if os.path.islink(CURRENT_SYMLINK):\n        try:\n     \
+        \       # get all .sh files in bin directory\n            # sh_files = glob.glob(\"\
+        current/bin/*.sh\")\n\n            # stop required .sh scripts\n         \
+        \   for file_path in service_list:\n                subprocess.run([f\"./current/bin/{file_path}.sh\"\
+        , \"start\"])\n                print(f\"Starting {file_path}.sh\")\n\n   \
+        \     except Exception as e:\n            print(f\"Failed to start services:\
+        \ {e}\")\n    else:\n        print(\"Error: file '{}' is not a symbolic link\"\
+        .format(CURRENT_SYMLINK))\n\ndef stop_services(service_list):\n    \"\"\"\n\
+        \    Stops required shell scripts in previous gateway version\n    \"\"\"\n\
+        \    if os.path.islink(CURRENT_SYMLINK):\n        try:\n            # get\
+        \ all .sh files in bin directory\n            # sh_files = glob.glob(\"current/bin/*.sh\"\
+        )\n\n            # stop all .sh scripts\n            for file_path in service_list:\n\
+        \                pid_file = f\"current/pids/{file_path}.pid\"\n          \
+        \      if os.path.isfile(pid_file):\n                    subprocess.run([f\"\
+        ./current/bin/{file_path}.sh\", \"stop\"])\n                    print(f\"\
+        Stopping {file_path}.sh\")\n        except Exception as e:\n            print(f\"\
+        Failed to stop services: {e}\")\n    else:\n        print(\"Error: file '{}'\
+        \ is not a symbolic link\".format(CURRENT_SYMLINK))\n\ndef verify_no_previous_instances(service_list):\n\
+        \    \"\"\"\n    Verify that there is no previous instance running\n    \"\
+        \"\"\n    command_list = []\n    output = \"\"\n    try:\n        for index\
+        \ in range(len(service_list)):\n            # Build the command string using\
+        \ the parameter values\n            command = \"ps -ef | grep -v grep | grep\
+        \ appName={} | grep -i serviceContext={} | grep :{}: | wc -l\".format(service_list[index],\
+        \ DEFAULT_SERVICE_CONTEXT, service_list[index].lower())\n            command_list.append(command)\n\
+        \            if index != len(service_list) - 1:\n                command_list.append(\"\
+        \ && \")\n        \n        full_command = \"\".join(command_list)\n     \
+        \   print(full_command)\n        output = subprocess.check_output(full_command,\
+        \ shell=True)\n    except Exception as e:\n            print(f\"Failed to\
+        \ verify no previous instance: {e}\")\n\n    number_of_instances = output.decode(\"\
+        utf-8\").strip().split(\"\\n\")\n    for index in range(len(service_list)):\n\
+        \        number_of_instance = int(number_of_instances[index])\n        print(f\"\
+        {service_list[index]}: {number_of_instance}\")\n        if number_of_instance\
+        \ != 0:\n            raise Exception(f\"There are previous instances running\"\
+        )\n\ndef unzip_package(zip_file_name):\n    \"\"\"\n    Unzips application\
+        \ package\n    \"\"\"\n    try:\n        subprocess.run(['unzip', '-qq', zip_file_name],\
+        \ check=True)\n    except Exception as e:\n        raise Exception(f\"Failed\
+        \ to unzip package: {e}\")\n\ndef delete_file(target):\n    \"\"\"\n    Deletes\
+        \ zipped package\n    \"\"\"\n    try:\n        subprocess.run([\"rm\", target])\n\
+        \    except Exception as e:\n        raise Exception(f\"Failed to delete package\
+        \ zip: {e}\") \n\ndef pull_application_from_artifactory(gateway_project_name,\
+        \ gateway_version, zipped_package):\n    \"\"\"\n    Pull gateway application\
+        \ from artifactory as zipped file\n    \"\"\"\n    package_url = f\"https://artifactory.sparksystems.sg:8181/artifactory/RELEASE_PACKAGE/{GATEWAY_PACKAGE_DEFAULT_PREFIX}{gateway_project_name}/{gateway_version}/{GATEWAY_PACKAGE_DEFAULT_PREFIX}{gateway_project_name}-{gateway_version}-{GATEWAY_PACKAGE_DEFAULT_SUFFIX}\"\
+        \n    payload = {}\n    headers = {\n        'X-JFrog-Art-Api' : 'cmVmdGtuOjAxOjAwMDAwMDAwMDA6YU5mcjRzT2ZPUHJ5dUlQZmRTWWJkRmVtUVJz'\n\
+        \    }\n    res = requests.get(package_url, data=payload, headers=headers)\n\
+        \    if res.status_code == 200:\n        with open(zipped_package, \"wb\"\
+        ) as fd:\n            fd.write(res.content)\n    else:\n        raise Exception(f\"\
+        Failed to pull package from artifactory: {res.status_code} {res.reason}\"\
+        )\n\ndef deploy_gateway(application_name, application_version, service_list):\n\
+        \    set_cwd(GATEWAY_DEPLOY_TEST_DIR)\n    # zipped_package = f\"{GATEWAY_PACKAGE_DEFAULT_PREFIX}{application_name}-{application_version}-{GATEWAY_PACKAGE_DEFAULT_SUFFIX}\"\
+        \n    # pull_application_from_artifactory(application_name, application_version,\
+        \ zipped_package)\n    # update_package_permission(zipped_package)\n    #\
+        \ stop_services(service_list)\n    # verify_no_previous_instances(service_list)\n\
+        \    # move_logs(f\"{application_name}market\", application_version)\n   \
+        \ # unzip_package(zipped_package)\n    # delete_file(zipped_package)\n   \
+        \ # update_service_symlink(f\"{application_name}market-{application_version}\"\
+        )\n    # update_logs_symlink(f\"{application_name}market\", application_version)\n\
+        \    # update_config_file(application_version)\n    # start_services(service_list)\n\
+        \    # clean_up_directory(application_name)\n    verify_no_previous_instances(service_list)\n\
+        \nif __name__ == \"__main__\":\n    try:\n        _, application_type, application_name,\
+        \ application_version, service_name = [arg.strip().rstrip() for arg in sys.argv[:8]]\n\
+        \        if len(sys.argv) != 5:\n            raise Exception\n    except:\n\
+        \        example = 'python3 ApplicationDeployment.py ApplicationType ApplicationName\
+        \ ApplicationVersion ServiceName'\n        raise Exception(f'Wrong number\
+        \ of arguments. Example:\\n{example}')\n    \n    servicelist = SERVICE_LIST\n\
+        \n    if service_name.strip() != \"\":\n        service_list = get_services(service_name.strip())\n\
+        \    \n    if not is_valid_services(service_list):\n        raise Exception(\"\
+        Invalid service(s) provided\")\n\n    if (application_type == \"GATEWAY\"\
+        ):\n        deploy_gateway(application_name, application_version, service_list)\n\
+        \    elif (application_type == \"ENGINE\"):\n        #Deploy engine\n    \
+        \    pass\n    elif (application_type == \"GUI\"):\n        # Deploy GUI\n\
+        \        pass\n    elif (application_type == \"SERVICE PROXY\"):\n       \
+        \ # Deploy Service Proxy\n        pass\n    else:\n        raise Exception(\"\
+        Invalid application type\")"
+      scriptInterpreter: python3
+    - exec: ls -R -l
+    keepgoing: false
+    strategy: node-first
+  uuid: 2d51d0c3-a64b-47d8-98ba-349424abea14
+- defaultTab: nodes
+  description: |
+    Update or rollback a target Database to the targeted version. Update can be used for new databases if fx schema has already been created
+  executionEnabled: true
+  group: Database
+  id: 7ac685bd-9280-43bc-9e49-34a41713df72
+  loglevel: INFO
+  name: Deploy SparkDB
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: remote-node
+  nodesSelectedByDefault: true
+  options:
+  - label: Client DB
+    name: clientdb
+    required: true
+    values:
+    - src
+    - untl
+    - uob
+    valuesListDelimiter: ','
+  - label: Sparkdb Version
+    name: SparkdbVersion
+    required: true
+    values:
+    - 1.0.0
+    - 1.1.1
+    - 1.1.2
+    valuesListDelimiter: ','
+  - enforced: true
+    label: Target Environment
+    name: TargetEnvironment
+    required: true
+    values:
+    - DEV
+    - UAT
+    - PROD
+    valuesListDelimiter: ','
+  - enforced: true
+    label: Use properties file
+    name: useproperties
+    value: 'No'
+    values:
+    - 'Yes'
+    - 'No'
+    valuesListDelimiter: ','
+  - description: Liquibase command
+    label: Liquibase Command
+    name: liquibaseCommand
+    required: true
+    values:
+    - rollback
+    - update
+    - updatesql
+    valuesListDelimiter: ','
+  - label: Liquibase Properties File
+    name: liquibaseproperties
+    type: file
+  - label: Database User
+    name: dbuser
+    value: DB username
+  - label: Database Password
+    name: dbpassword
+    secure: true
+    valueExposed: true
+  - enforced: true
+    label: DB type
+    name: dbtype
+    required: true
+    values:
+    - Postgres
+    - OracleDB
+    valuesListDelimiter: ','
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - args: --version ${option.SparkdbVersion} --lbcommand ${option.liquibaseCommand}  --dbuser
+        ${option.dbuser} --dbpassword "f${option.dbpassword}" --clientdb ${option.clientdb}
+        --targetenvironment ${option.TargetEnvironment} --useproperties ${option.useproperties}
+        --properties "f${file.liquibaseproperties}'"
+      fileExtension: py
+      interpreterArgsQuoted: false
+      script: "import sys\nimport requests, zipfile\nimport argparse\nimport os\n\
+        import subprocess\nimport shutil\nimport json\n# import jaydebeapi\n\n\n#\
+        \ Rundeck options mapping\noptionsMap = {\n    'DEV':'DDSGF001.sgf.sparksystems.sg:30101/',\n\
+        \    'UAT':'UDSG1001.sg1.sparksystems.sg:30101/',\n    'DEMO':'UDSG1001.sg1.sparksystems.sg:30101/',\n\
+        \    'Postgres':('jdbc:postgresql://', 'org.postgresql.Driver'),\n    'OracleDB':('jdbc:oracle:thin:@',\
+        \ 'oracle.jdbc.driver.OracleDriver')\n}\ndef download_file_and_unzip(url,\
+        \ output_file, dir):\n    response = requests.get(url)\n    dest = os.path.join(dir,\
+        \ output_file)\n    with open(dest, 'wb') as f:\n        f.write(response.content)\n\
+        \    print(f'Downloaded {url} to {output_file}')\n    print(f'Unzipping {output_file}')\n\
+        \    with zipfile.ZipFile(dest, 'r') as zip_ref:\n        zip_ref.extractall(dir)\n\
+        \    print(f'Succesfully unzipped {output_file}')\n\n    \ndef cleanup(output_file):\n\
+        \    # os.remove(output_file)\n    shutil.rmtree(output_file)\n    print(f'Succesfully\
+        \ cleaned up {output_file}')\n\ndef get_rundeck_options():\n    parser = argparse.ArgumentParser()\n\
+        \    parser.add_argument(\"-version\", \"--version\", help=\"sparkdb version\"\
+        )\n    parser.add_argument(\"-lbcommand\", \"--lbcommand\", help=\"Liquibase\
+        \ command\")\n    parser.add_argument(\"-properties\", \"--properties\", help=\"\
+        properties file\")\n    parser.add_argument(\"-dbuser\", \"--dbuser\", help=\"\
+        db user\")\n    parser.add_argument(\"-dbpassword\", \"--dbpassword\", help=\"\
+        dbpassword\")\n    parser.add_argument(\"-useproperties\", \"--useproperties\"\
+        , help=\"use properties\")\n    parser.add_argument(\"-clientdb\", \"--clientdb\"\
+        , help=\"Client DB\")\n    parser.add_argument(\"-targetenvironment\", \"\
+        --targetenvironment\", help=\"Client\")\n    args = parser.parse_args()\n\
+        \    print(f'Rundeck options : {args}')\n    return args\n\n    \n\ndef set_liquibase_environment(env_name:\
+        \ str, liquibase_variable: str):\n    # Replace these with the environment\
+        \ variable names and values you want to set\n    print(f'Assigning env {env_name}\
+        \ as {liquibase_variable}')\n    os.environ[env_name] = liquibase_variable\n\
+        \ndef set_liquibase_environment(env_name: str, liquibase_variable: str):\n\
+        \    # Replace these with the environment variable names and values you want\
+        \ to set\n    print(f'Assigning env {env_name} as {liquibase_variable}')\n\
+        \    os.environ[env_name] = liquibase_variable\n\n# def get_latest_liquibase_tag(url):\n\
+        #     # SQL SELECT command\n#     sql_query = \"SELECT tag FROM databasechangelog\
+        \ where tag is not null order by dateexecuted desc LIMIT 1\"\n\n#     # Establish\
+        \ JDBC connection\n#     jdbc_connection = jaydebeapi.connect(jdbc_driver,\
+        \ jdbc_url, [jdbc_user, jdbc_password])\n\n#     # Create cursor object\n\
+        #     cursor = jdbc_connection.cursor()\n\n#     # Execute SQL command\n#\
+        \     cursor.execute(sql_query)\n\n#     # Fetch results\n#     results =\
+        \ cursor.fetchall()\n\n#     # Display results\n#     for row in results:\n\
+        #         print(row)\n\n#     # Close cursor and JDBC connection\n#     cursor.close()\n\
+        #     jdbc_connection.close()\n#     return results[0]\n    \ndef main():\n\
+        \    #setup\n    cwd = os.getcwd()\n    tempdir = 'sparkdbtemp'\n    temppath\
+        \ = os.path.join(cwd, tempdir) \n    if os.path.exists(temppath):\n      \
+        \  cleanup(temppath)\n    os.mkdir(temppath) \n    print(\"Directory '% s'\
+        \ created\" % tempdir) \n    options = get_rundeck_options()\n    version\
+        \ = options.version\n    # download artifact\n    print(f'Using sparkdb version\
+        \ : {version}')\n    downloadurl = f'http://192.168.1.183:8081/repository/RELEASE/sg/sparksystems/ats/sparkdb/sparkdb/{version}/sparkdb-{version}.zip'\n\
+        \    print(f'Downloading sparkdb version : {version} from {downloadurl}')\n\
+        \    # output = f'/home/spark/sparkdb/{version}/sparkdb-{version}-temp.zip'\n\
+        \    output = f'sparkdb-{version}-temp.zip'\n    \n    download_file_and_unzip(downloadurl,\
+        \ output, temppath)\n    print(f'Succesfully downloaded sparkdb version :\
+        \ {version}')\n    # os.environ['RD_OPTION_REGIONS']\n    # set environment\
+        \ variables\n    print(f'Setting up environment variables')\n    set_liquibase_environment('LB_COMMAND',\
+        \ options.lbcommand)\n    set_liquibase_environment('DB_DRIVER', 'org.postgresql.Driver')\n\
+        \    if options.useproperties != 'Yes':\n        set_liquibase_environment('DB_USER',\
+        \ options.dbuser)\n        set_liquibase_environment('DB_PASSWORD', options.dbpassword[1:])\n\
+        \        set_liquibase_environment('DB_URL', f'{optionsMap[\"@option.dbtype@\"\
+        ][0]}{optionsMap[options.targetenvironment]}{options.clientdb}_db?currentSchema=fx')\n\
+        \    print('Succesfully set environment variables')\n    # run liquibase script\n\
+        \    # subprocess.run(['bash', script_path])\n    # file mode\n    sparkdbPath\
+        \ = os.path.join(tempdir, f'sparkdb-{version}/bin/liquibase.sh')\n    print(f'Running\
+        \ sparkdb version : {version} from {sparkdbPath}')\n    os.chmod(sparkdbPath,\
+        \ 0o755)\n    # Remove carriage returns\n    # Read in the contents of the\
+        \ file\n    with open(sparkdbPath, \"r\") as file:\n        file_contents\
+        \ = file.read()\n    \n\n    file_contents = file_contents.replace(\"\\r\"\
+        , \"\")\n    \n    # Write the modified contents back to the file\n    with\
+        \ open(sparkdbPath, \"w\") as file:\n        file.write(file_contents)\n \
+        \   \n    print('Removed carriage returns from liquibase script')\n    if\
+        \ options.useproperties == 'Yes':\n        print(f'Using liquibase properties\
+        \ file : {options.properties}')\n        os.system(\"./\" + f'{sparkdbPath}\
+        \ -p {options.properties}')\n    else:\n        defaultfile = os.path.join(tempdir,\
+        \ f'sparkdb-{version}/config/default.properties')\n        print(f'Using liquibase\
+        \ environment variables : {options.properties}')\n        if options.lbcommand\
+        \ == 'rollback':\n            set_liquibase_environment('ADDITIONAL_POST_LB_ARGUMENTS',\
+        \ f'--tag={version}')\n            with open(defaultfile, 'w') as f:\n   \
+        \             f.write(f'tag={version}')\n        os.system(\"./\" + f'{sparkdbPath}')\n\
+        \        if options.lbcommand == 'update':\n            set_liquibase_environment('ADDITIONAL_POST_LB_ARGUMENTS',\
+        \ f'--tag={version}')\n            set_liquibase_environment('LB_COMMAND',\
+        \ 'tag')\n            os.system(\"./\" + f'{sparkdbPath}')\n\n        \n \
+        \   cleanup(temppath)\n        \nif __name__ == '__main__':\n    main()"
+      scriptInterpreter: python3
+    keepgoing: false
+    strategy: node-first
+  uuid: 7ac685bd-9280-43bc-9e49-34a41713df72
+- defaultTab: nodes
+  description: devops script deployment on target node
+  executionEnabled: true
+  group: Rundeck
+  id: a695f613-6dc9-4117-9c9d-ed6a6c3648a3
+  loglevel: INFO
+  name: DevOps-Scripts-Package-Deploy
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'name: EXECUTOR-NODE[tasg1011.sg1.sparksystems.sg] '
+  nodesSelectedByDefault: true
+  options:
+  - hidden: true
+    name: artifactory_api_key
+    required: true
+    secure: true
+    storagePath: keys/project/TEST/artifactory_api_key
+    valueExposed: true
+  - name: filename
+    regex: (.*).zip
+    required: true
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - args: ${option.artifactory_api_key} ${option.filename}
+      interpreterArgsQuoted: false
+      script: "import datetime\nimport requests\nimport string\nimport yaml\nimport\
+        \ shutil\nimport sys\nimport os\nfrom artifactory import ArtifactoryPath\n\
+        from zipfile import ZipFile\n\n#Global variables\nworkspace = \"python_workspace\"\
+        \n\nartifactory_api_key = ''\nartifactory_download_path = 'https://PISG1050.sg1.sparksystems.sg/artifactory/rundeck-export-artifacts'\n\
+        \ndef artifactory_file_download(filename):\n    headers = {\n        'X-JFrog-Art-Api':\
+        \ artifactory_api_key\n    }\n    \n    response = requests.get( artifactory_download_path\
+        \ + '/' + filename, headers=headers, verify=False)\n    \n    if response.status_code\
+        \ == 200:\n        with open(filename, 'wb') as f:\n            f.write(response.content)\n\
+        \        print(\"Export Filename::\",filename)\n    else:\n        print(\"\
+        Failed to download file from artifactory. Error code:\", response.status_code)\n\
+        \        print(response.text)\n        \n        \ndef unzip_package(filename):\n\
+        \    with ZipFile(filename,\"r\") as zip_ref:\n        zip_ref.extractall(workspace)\n\
+        \ndef cleanup_workspace():\t\n    print(\"workspace_name\",workspace)\n\n\
+        \    if os.path.exists(workspace):\n        shutil.rmtree(workspace)\n   \
+        \ else:\n        print('No directory for cleanup')\n\ndef cleanup_package(filename):\t\
+        \    \n    if os.path.exists(filename):\n        os.remove(filename)\n   \
+        \ else:\n        print('No file for cleanup')\n\t\n\nif __name__ == \"__main__\"\
+        :\n        artifactory_api_key = sys.argv[1]\n        filename = sys.argv[2]\n\
+        \        cleanup_workspace()\n        artifactory_file_download(filename)\n\
+        \        unzip_package(filename)\n        cleanup_package(filename)\n\n\t\n"
+      scriptInterpreter: python3
+    keepgoing: false
+    strategy: node-first
+  uuid: a695f613-6dc9-4117-9c9d-ed6a6c3648a3
+- defaultTab: nodes
+  description: upload devops repository package in artifactory
+  executionEnabled: true
+  group: Rundeck
+  id: f0eab970-3739-4d52-9416-fa3189c13bf4
+  loglevel: INFO
+  name: DevOps-Scripts-Package-Upload
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'name: EXECUTOR-NODE[tasg1011.sg1.sparksystems.sg] '
+  nodesSelectedByDefault: true
+  options:
+  - hidden: true
+    name: artifactory_api_key
+    required: true
+    secure: true
+    storagePath: keys/project/TEST/artifactory_api_key
+    valueExposed: true
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - args: '${option.artifactory_api_key} '
+      interpreterArgsQuoted: false
+      script: "import datetime\nimport requests\nimport string\nimport yaml\nimport\
+        \ shutil\nimport sys\nimport os\nfrom artifactory import ArtifactoryPath\n\
+        from zipfile import ZipFile\n\n#Global variables\nx = datetime.datetime.now()\n\
+        date_time = x.strftime(\"%y%m%d%H%M%S\")\nzip_filename = 'devops_project_export_'\
+        \ + date_time + '.zip'\nrepo_name = \"devops\"\n\nartifactory_api_key = ''\n\
+        git_cmd = 'git -c http.sslVerify=false clone --single-branch --branch SEFX-2241\
+        \ https://ajay.vaidya:glpat-Fyd3SagmMdjDtP6MMT_H@gitlab.sparksystems.sg/spark-systems/devops.git'\n\
+        artifactory_upload_path = 'https://PISG1050.sg1.sparksystems.sg/artifactory/rundeck-export-artifacts'\n\
+        \ndef git_clone():\n    os.system(git_cmd)\n\ndef artifactory_file_upload():\n\
+        \    #Set Artifactory path url and API key\n    #data = open(filename, 'rb').read()\n\
+        \    with open(zip_filename, 'rb') as f:\n        data = f.read()\n    headers\
+        \ = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8','X-JFrog-Art-Api':\
+        \ artifactory_api_key}\n    response = requests.put(artifactory_upload_path\
+        \ +'/'+ zip_filename, headers=headers, data=data, verify=False)\n   \n   \
+        \ # Check if the request was successful\n    if response.status_code == 201:\n\
+        \        print(\"File successfully uploaded::\",response.status_code)\n  \
+        \      print(response.text)\n    else:\n        print(\"upload failed ::\"\
+        ,response.status_code)\n        print(response.text)\n        \ndef create_package():\n\
+        \t#zf = zipfile.ZipFile(zip_filename, \"w\")\n\t    with ZipFile(zip_filename,\
+        \ 'w') as zf:\n\t        for dirname, subdirs, files in os.walk(repo_name):\n\
+        \t\t        zf.write(dirname)\n\t\t        for filename in files:\n\t\t\t\
+        \        zf.write(os.path.join(dirname, filename))\n\ndef clean_workspace():\t\
+        \n    print(\"repo_name\",repo_name)\n    #dirpath = os.path.join('./' + repo_name)\n\
+        \    #filepath = os.path.exists(('./' + zip_filename)\n\t\n    if os.path.exists(repo_name):\n\
+        \        shutil.rmtree(repo_name)\n    else:\n        print('No directory\
+        \ for cleanup')\n\t    \n    if os.path.exists(zip_filename):\n        os.remove(zip_filename)\n\
+        \    else:\n        print('No file for cleanup')\n\t\n\nif __name__ == \"\
+        __main__\":\n        \n        artifactory_api_key = sys.argv[1]\n       \
+        \ clean_workspace()\n        git_clone()\n        create_package()\n     \
+        \   artifactory_file_upload()\n\t\n"
+      scriptInterpreter: python3
+    keepgoing: false
+    strategy: node-first
+  uuid: f0eab970-3739-4d52-9416-fa3189c13bf4
+- defaultTab: nodes
+  description: export rundeck jobs
+  executionEnabled: true
+  group: Rundeck
+  id: 3d1a4b70-c121-412a-b933-53345c793508
+  loglevel: INFO
+  name: Export-Rundeck-Jobs
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'name: EXECUTOR-NODE[tasg1011.sg1.sparksystems.sg] '
+  nodesSelectedByDefault: true
+  options:
+  - hidden: true
+    name: X-Rundeck-Auth-Token
+    secure: true
+    storagePath: keys/project/TEST/Rundeck-Auth-Token
+    valueExposed: true
+  - hidden: true
+    name: artifactory_api_key
+    secure: true
+    storagePath: keys/project/TEST/artifactory_api_key
+    valueExposed: true
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - args: ${option.artifactory_api_key} ${option.X-Rundeck-Auth-Token}
+      interpreterArgsQuoted: false
+      script: "import datetime\nimport requests\nimport string\nimport yaml\nimport\
+        \ sys\nimport os\nfrom artifactory import ArtifactoryPath\nfrom zipfile import\
+        \ ZipFile\n\n#Global variables\nx = datetime.datetime.now()\ndate_time = x.strftime(\"\
+        %y%m%d%H%M%S\")\nzip_filename = 'rundeck_project_export_' + date_time + '.zip'\n\
+        \nartifactory_api_key = ''\nRundeck_Auth_Token = ''\nheaders = ''\nconfig_url\
+        \ = 'https://uasg1004.sg1.sparksystems.sg:4443/api/21'\nartifactory_upload_path\
+        \ = 'https://PISG1050.sg1.sparksystems.sg/artifactory/rundeck-export-artifacts'\n\
+        \ndef export_jobs(project_name):\n    # config_url,headers = load_request_parameters()\n\
+        \    url = config_url + '/project/' + project_name + '/jobs/export?format=yaml'\n\
+        \    # Send POST request to create export from rundeck\n    response = requests.post(url,\
+        \ headers=headers)\n\n    # Check if the request was successful\n    if response.status_code\
+        \ == 200:\n        output_store = project_name + '_export_' + date_time +\
+        \ '.yaml'\n        with open(output_store, 'w') as f:\n            f.write(response.text)\n\
+        \        print(\"Export Filename::\",output_store)\n        return output_store\n\
+        \    else:\n        print(\"Failed to create rundeck export file. Error code:\"\
+        , response.status_code)\n        print(response.text)\n\ndef artifactory_file_upload(filename):\n\
+        \    #Set Artifactory path url and API key\n    #data = open(filename, 'rb').read()\n\
+        \    with open(filename, 'rb') as f:\n        data = f.read()\n    headers\
+        \ = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8','X-JFrog-Art-Api':\
+        \ artifactory_api_key}\n    response = requests.put(artifactory_upload_path\
+        \ +'/'+ filename, headers=headers, data=data, verify=False)\n   \n    # Check\
+        \ if the request was successful\n    if response.status_code == 201:\n   \
+        \     print(\"File successfully uploaded::\",response.status_code)\n     \
+        \   print(response.text)\n    else:\n        print(\"upload failed ::\",response.status_code)\n\
+        \        print(response.text)\n        \ndef project_backups():\n    #config_url,headers\
+        \ = load_request_parameters()\n    url = config_url + '/projects'\n\n    #\
+        \ Send GET request\n    response = requests.get(url, headers=headers)\n\n\
+        \    # Check if the request was successful and execute below steps\n    if\
+        \ response.status_code == 200:\n        content = response.json();\n     \
+        \   \n        #Get Rundeck project list to export jobs and create zip file\n\
+        \        with ZipFile(zip_filename, 'w') as f:\n            for item in content:\n\
+        \                filename = export_jobs(item['name'])\n                f.write(filename)\n\
+        \                os.remove(filename)\n        return zip_filename\n    else:\n\
+        \        print(\"Failed to create rundeck export file. Error code:\", response.status_code)\n\
+        \        print(response.text)\n\n\nif __name__ == \"__main__\":\n    \n  \
+        \      artifactory_api_key = sys.argv[1]\n        Rundeck_Auth_Token = sys.argv[2]\n\
+        \        headers = {\n            \"Accept\": \"application/json\",\n    \
+        \        \"X-Rundeck-Auth-Token\": Rundeck_Auth_Token,\n            \"Content-Type\"\
+        : \"application/json\"\n        }\n        \n        if len(sys.argv) >= 4:\n\
+        \            #Export jobs for selected project\n            project_name =\
+        \ sys.argv[3]\n            print(\"project name found, will export jobs for\
+        \ given project::\",project_name)\n            print (\"Project Name::\",project_name)\n\
+        \            filename = export_jobs(project_name)\n            with ZipFile(zip_filename,\
+        \ 'w') as f:\n                f.write(filename)\n                os.remove(filename)\n\
+        \            artifactory_file_upload(zip_filename)\n            print (\"\
+        Zip file Name::\",zip_filename)\n            os.remove(zip_filename)\n   \
+        \     else:\n            #Export jobs for all projects\n            print(\"\
+        Creating full dump for all projects\")\n            zip_filename = project_backups()\
+        \ \n            artifactory_file_upload(zip_filename)\n            print(\"\
+        zip_filename::\",zip_filename)\n            os.remove(zip_filename) \n"
+      scriptInterpreter: python3
+    keepgoing: false
+    strategy: node-first
+  uuid: 3d1a4b70-c121-412a-b933-53345c793508
+- defaultTab: nodes
+  description: export rundeck jobs
+  executionEnabled: true
+  group: _TESTING_DO_NOT_EXPORT_
+  id: b33d6aff-77a2-4043-8fc6-f0a17aa8ccdf
+  loglevel: INFO
+  name: Export-Rundeck-Jobs-Test
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'name: EXECUTOR-NODE[tasg1011.sg1.sparksystems.sg] '
+  nodesSelectedByDefault: true
+  options:
+  - hidden: true
+    name: X-Rundeck-Auth-Token
+    secure: true
+    storagePath: keys/project/TEST/Rundeck-Auth-Token
+    valueExposed: true
+  - hidden: true
+    name: artifactory_api_key
+    secure: true
+    storagePath: keys/project/TEST/artifactory_api_key
+    valueExposed: true
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - exec: cd ./python_workspace/devops/rundeck/bin/ && python3 Export-Rundeck-Jobs.py
+        ${option.artifactory_api_key} ${option.X-Rundeck-Auth-Token}
+    keepgoing: false
+    strategy: node-first
+  uuid: b33d6aff-77a2-4043-8fc6-f0a17aa8ccdf
+- defaultTab: nodes
+  description: import rundeck jobs
+  executionEnabled: true
+  group: Rundeck
+  id: 9b4630cd-1ae8-4982-9fbf-83459d4eb410
+  loglevel: INFO
+  name: Import-Rundeck-Jobs
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'name: EXECUTOR-NODE[tasg1011.sg1.sparksystems.sg] '
+  nodesSelectedByDefault: true
+  options:
+  - hidden: true
+    name: X-Rundeck-Auth-Token
+    required: true
+    secure: true
+    storagePath: keys/project/TEST/Rundeck-Auth-Token
+    valueExposed: true
+  - hidden: true
+    name: artifactory_api_key
+    required: true
+    secure: true
+    storagePath: keys/project/TEST/artifactory_api_key
+    valueExposed: true
+  - name: filename
+    regex: (.*).zip
+    required: true
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - exec: pwd
+    - args: ${option.artifactory_api_key} ${option.X-Rundeck-Auth-Token} ${option.filename}
+      interpreterArgsQuoted: false
+      script: "import requests\nimport secrets\nimport string\nimport yaml\nimport\
+        \ sys\nimport os\nimport shutil\nimport time\nfrom zipfile import ZipFile\n\
+        from artifactory import ArtifactoryPath\n\n\nartifactory_api_key = ''\nRundeck_Auth_Token\
+        \ = ''\nconfig_url = 'https://uasg1004.sg1.sparksystems.sg:4443/api/21'\n\
+        artifactory_download_path = 'https://PISG1050.sg1.sparksystems.sg/artifactory/rundeck-export-artifacts'\n\
+        \ndef get_config_values(input_item):\n    #Open config files to read values\
+        \ based on keys.\n    with open(\"config.yml\", \"r\") as stream:\n      \
+        \  config = yaml.safe_load(stream)['rundeck']\n        return config[input_item]\n\
+        \ndef unzip_file(zip_filename):\n    #Unzip file\n    dir_name = zip_filename[0:-4]\n\
+        \    with ZipFile(zip_filename, 'r')  as zipObj:\n        zipObj.extractall(path=dir_name)\n\
+        \n    print(\"Unzip Directory created... - Directory name:\",dir_name)   \
+        \ \n \ndef get_file_list(zip_filename):\n    #Return file list from zip file\n\
+        \    with ZipFile(zip_filename, 'r')  as zipObj: \n        listOfiles = zipObj.namelist()\n\
+        \        return listOfiles\n\ndef get_project_name_from_file(filename):\n\
+        \    #Return project name from file name    \n    x = filename.split(\"_export_\"\
+        )\n    project_name = x[0]\n    return project_name\n \ndef download_artifact(artifact_name):\n\
+        \    #Download artifact\n    headers = {\n        'X-JFrog-Art-Api': artifactory_api_key\n\
+        \    }\n    \n    response = requests.get( artifactory_download_path + '/'\
+        \ + artifact_name, headers=headers, verify=False)\n    \n    if response.status_code\
+        \ == 200:\n        with open(artifact_name, 'wb') as f:\n            f.write(response.content)\n\
+        \        print(\"Export Filename::\",artifact_name)\n    else:\n        print(\"\
+        Failed to download file from artifactory. Error code:\", response.status_code)\n\
+        \        print(response.text)\n        \ndef get_project_info(project_name):\n\
+        \    #Rundeck_Auth_Token = get_config_values('X-Rundeck-Auth-Token')\n   \
+        \ #config_url = get_config_values('rundeck_url')\n    url = config_url + '/project/'\
+        \ + project_name\n    \n    #Set request headers\n    headers = {\n      \
+        \  \"Accept\": \"application/json\",\n        \"X-Rundeck-Auth-Token\": Rundeck_Auth_Token\n\
+        \    }\n    \n    # Send GET request to check project info\n    response =\
+        \ requests.get(url, headers=headers)\n    \n    #Return status code\n    return\
+        \ response.status_code\n    \n        \ndef import_jobs(project_name,filename):\n\
+        \    # Get config values\n    #Rundeck_Auth_Token = get_config_values('X-Rundeck-Auth-Token')\n\
+        \    #config_url = get_config_values('rundeck_url')\n    url = config_url\
+        \ + '/project/' + project_name + '/jobs/import?fileformat=yaml&uuidOption=remove&dupeOption=update'\
+        \  \n    \n    #Set request headers\n    headers = {\n        \"Accept\":\
+        \ \"application/json\",\n        \"X-Rundeck-Auth-Token\": Rundeck_Auth_Token,\n\
+        \        \"Content-Type\": \"application/yaml\"\n    }\n\n    #files = {'file':\
+        \ open(filename, 'rb')}\n    data = open(filename, 'rb').read()\n    # Send\
+        \ POST request\n\n    response = requests.post(url, headers=headers, data=data)\n\
+        \    \n    # Check if the request was successful\n    if response.status_code\
+        \ == 200:\n        print(\"Rundeck jobs successfully imported\",response.text)\n\
+        \    else:\n        print(\"Failed to import rundeck jobs. Error code:\",\
+        \ response.status_code)\n        print(response.text)\n        exit()\n\n\
+        def create_project(project_name):\n    #Get config values\n    #Rundeck_Auth_Token\
+        \ = get_config_values('X-Rundeck-Auth-Token')\n    #config_url = get_config_values('rundeck_url')\n\
+        \    url = config_url + '/projects'\n    \n    # Configure request url and\
+        \ headers\n    headers = { \n    \n        \"Accept\": \"application/json\"\
+        ,\n        \"X-Rundeck-Auth-Token\": Rundeck_Auth_Token,\n        \"Content-Type\"\
+        : \"application/json\"\n    }\n    \n    # Configure payload\n    payload\
+        \ = {\n        \"name\": project_name\n    }\n     \n    # Send POST request\n\
+        \    response = requests.post(url, headers=headers, json=payload)\n\n    #\
+        \ Check if the request was successful\n    if response.status_code == 201:\n\
+        \        print(\"Project_Name::\",project_name)  \n        print(\"Project\
+        \ Successfully created...\",response.text)    \n    else:\n        print(\"\
+        Failed to create rundeck project. Error code:\", response.status_code)\n \
+        \       print(response.text)\n        exit()\n          \nif __name__ == \"\
+        __main__\":\n    if len(sys.argv) >= 3:\n        artifactory_api_key = sys.argv[1]\n\
+        \        Rundeck_Auth_Token = sys.argv[2]\n        zip_filename = sys.argv[3]\n\
+        \        \n        print(\"Artifact Name:\",zip_filename)\n        print(\"\
+        Downloading artifact from artifactory\")\n        download_artifact(zip_filename)\n\
+        \        print(\"Artifact downloaded successfully\")\n        \n        unzip_file(zip_filename)\n\
+        \        print(\"Unzip Artifact in local path completed\")\n        \n   \
+        \     print(\"Import process started\")\n        listOfiles = get_file_list(zip_filename)\n\
+        \        \n        dir_name = zip_filename[0:-4]\n        print(\"Directory\
+        \ Name::\",dir_name)\n        \n        for elem in listOfiles:\n        \
+        \    print(\"File Name::\",elem)\n            project_name = get_project_name_from_file(elem)\n\
+        \            print(\"Project Name::\",project_name)\n            status_code\
+        \ = get_project_info(project_name)\n            \n            if status_code\
+        \ == 200:\n                print(\"Project found --> status code::\",status_code)\n\
+        \                print(\"Import started\")\n                import_jobs(project_name,dir_name+'/'+elem)\n\
+        \                print(\"Import completed\")\n            else:\n        \
+        \        print(\"Project not found --> status code::\",status_code)\n    \
+        \            print(\"Initiated create project request\")\n               \
+        \ create_project(project_name)\n                print(\"Project created\"\
+        )\n                print(\"Import started\")\n                import_jobs(project_name,dir_name+'/'+elem)\n\
+        \                print(\"Import completed\")\n                #os.close(elem)\n\
+        \        print(\"Import process completed\")\n        os.remove(zip_filename)\n\
+        \        shutil.rmtree(dir_name)\n    else:\n        example = 'python  RundeckAllProjectJobImport.py\
+        \ zip_file_name'\n        raise Exception(f'Wrong number of arguments. Example\
+        \ usage:\\n{example}')\n        "
+      scriptInterpreter: python3
+    keepgoing: false
+    strategy: node-first
+  uuid: 9b4630cd-1ae8-4982-9fbf-83459d4eb410
+- defaultTab: nodes
+  description: ''
+  executionEnabled: true
+  group: _TESTING_DO_NOT_EXPORT_
+  id: 2c9c553a-88a2-4370-bc59-be4ff1a6dd7f
+  loglevel: INFO
+  name: Maven Test (Artifact storage location)
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: EXECUTOR.*
+  nodesSelectedByDefault: true
+  options:
+  - description: Upload settings.xml for maven configurations
+    name: settings.xml
+    required: true
+    type: file
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - description: Check for maven
+      exec: mvn --version
+    - description: check for settings.xml
+      exec: echo ${file.settings.xml}
+    keepgoing: false
+    strategy: node-first
+  uuid: 2c9c553a-88a2-4370-bc59-be4ff1a6dd7f
+- defaultTab: nodes
+  description: ''
+  executionEnabled: true
+  group: _TESTING_DO_NOT_EXPORT_
+  id: d1325e40-9fb0-4de7-8d30-c404fa42a637
+  loglevel: INFO
+  name: testing
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: EXE.*
+  nodesSelectedByDefault: true
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - exec: pip3 list
+    - exec: ls /etc/systemd/system/
+    - exec: groups rundeck && www
+    keepgoing: false
+    strategy: node-first
+  uuid: d1325e40-9fb0-4de7-8d30-c404fa42a637
+- defaultTab: nodes
+  description: ''
+  executionEnabled: true
+  group: _TESTING_DO_NOT_EXPORT_
+  id: 892bedb8-6274-4031-8846-1bd4b396bb54
+  loglevel: INFO
+  name: test-nodes
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'name: localhost '
+  nodesSelectedByDefault: true
+  options:
+  - delimiter: ','
+    multivalued: true
+    name: testing
+    values:
+    - ajay
+    - vaidya
+    valuesListDelimiter: ','
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - exec: pwd
+    - exec: cd /etc/rundeck && pwd
+    - exec: pwd
+    - exec: echo ${option.testing}
+    keepgoing: false
+    strategy: node-first
+  uuid: 892bedb8-6274-4031-8846-1bd4b396bb54

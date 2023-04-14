@@ -1,0 +1,160 @@
+- defaultTab: nodes
+  description: devops script deployment on target node
+  executionEnabled: true
+  id: a6206130-724d-4051-86da-798f341d7177
+  loglevel: INFO
+  name: DevOps-Scripts-Package-Deploy
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'name: EXECUTOR-NODE[tasg1011.sg1.sparksystems.sg] '
+  nodesSelectedByDefault: true
+  options:
+  - hidden: true
+    name: artifactory_api_key
+    required: true
+    secure: true
+    storagePath: keys/project/DevOps/artifactory_api_key
+    valueExposed: true
+  - name: filename
+    regex: (.*).zip
+    required: true
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - exec: cp ./python_workspace/devops/rundeck/bin/DevOps-Scripts-Package-Deploy.py
+        ./
+    - exec: cd ./python_workspace/devops/rundeck/bin/ && python3 DevOps-Scripts-Package-Deploy.py
+        ${option.artifactory_api_key} ${option.filename}
+    keepgoing: false
+    strategy: node-first
+  uuid: a6206130-724d-4051-86da-798f341d7177
+- defaultTab: nodes
+  description: upload devops repository package in artifactory
+  executionEnabled: true
+  id: eafadb9e-59d0-4ea3-9235-80ba6c03b4c9
+  loglevel: INFO
+  name: DevOps-Scripts-Package-Upload
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'name: EXECUTOR-NODE[tasg1011.sg1.sparksystems.sg] '
+  nodesSelectedByDefault: true
+  options:
+  - hidden: true
+    name: artifactory_api_key
+    required: true
+    secure: true
+    storagePath: keys/project/DevOps/artifactory_api_key
+    valueExposed: true
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - exec: cd ./python_workspace/devops/rundeck/bin/ && python3 DevOps-Scripts-Package-Upload.py
+        ${option.artifactory_api_key}
+    keepgoing: false
+    strategy: node-first
+  uuid: eafadb9e-59d0-4ea3-9235-80ba6c03b4c9
+- defaultTab: nodes
+  description: export rundeck jobs and upload in artifactory
+  executionEnabled: true
+  id: 2a04c0ce-0b99-47a6-b0d6-8e850aa15e14
+  loglevel: INFO
+  name: Export-Rundeck-Jobs
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'name: EXECUTOR-NODE[tasg1011.sg1.sparksystems.sg] '
+  nodesSelectedByDefault: true
+  options:
+  - delimiter: ','
+    description: Select projects for export
+    multivalued: true
+    name: Projects
+    values:
+    - ClientServices
+    - DevOps
+    - DevTeam
+    - TEST
+    valuesListDelimiter: ','
+  - hidden: true
+    name: X-Rundeck-Auth-Token
+    secure: true
+    storagePath: keys/project/DevOps/Rundeck-Auth-Token
+    valueExposed: true
+  - hidden: true
+    name: artifactory_api_key
+    secure: true
+    storagePath: keys/project/DevOps/artifactory_api_key
+    valueExposed: true
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - exec: cd ./python_workspace/devops/rundeck/bin/ && python3 Export-Rundeck-Jobs.py
+        ${option.artifactory_api_key} ${option.X-Rundeck-Auth-Token} ${option.Projects}
+    keepgoing: false
+    strategy: node-first
+  uuid: 2a04c0ce-0b99-47a6-b0d6-8e850aa15e14
+- defaultTab: nodes
+  description: import rundeck jobs
+  executionEnabled: true
+  id: 40a45f76-b1f3-49b0-8431-245d4539afeb
+  loglevel: INFO
+  name: Import-Rundeck-Jobs
+  nodeFilterEditable: false
+  nodefilters:
+    dispatch:
+      excludePrecedence: true
+      keepgoing: false
+      rankOrder: ascending
+      successOnEmptyNodeFilter: false
+      threadcount: '1'
+    filter: 'name: EXECUTOR-NODE[tasg1011.sg1.sparksystems.sg] '
+  nodesSelectedByDefault: true
+  options:
+  - hidden: true
+    name: X-Rundeck-Auth-Token
+    required: true
+    secure: true
+    storagePath: keys/project/DevOps/Rundeck-Auth-Token
+    valueExposed: true
+  - hidden: true
+    name: artifactory_api_key
+    required: true
+    secure: true
+    storagePath: keys/project/DevOps/artifactory_api_key
+    valueExposed: true
+  - name: filename
+    regex: (.*).zip
+    required: true
+  plugins:
+    ExecutionLifecycle: null
+  scheduleEnabled: true
+  sequence:
+    commands:
+    - exec: cd ./python_workspace/devops/rundeck/bin/ && python3 Import-Rundeck-Jobs.py
+        ${option.artifactory_api_key} ${option.X-Rundeck-Auth-Token} ${option.filename}
+    keepgoing: false
+    strategy: node-first
+  uuid: 40a45f76-b1f3-49b0-8431-245d4539afeb
