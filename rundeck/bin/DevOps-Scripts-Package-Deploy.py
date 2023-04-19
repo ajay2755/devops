@@ -8,6 +8,8 @@ import os
 from zipfile import ZipFile
 
 #Global variables
+x = datetime.datetime.now()
+date_time = x.strftime("%y%m%d%H%M%S")
 workspace = "python_workspace"
 artifactory_api_key = ''
 
@@ -31,8 +33,9 @@ def artifactory_file_download(filename):
             f.write(response.content)
         print("Export Filename::",filename)
     else:
+        cleanup_workspace()
         print("Failed to download file from artifactory. Error code:", response.status_code)
-        print(response.text)
+        raise Exception(response.text)
               
 def unzip_package(filename):
     #Unzip package
@@ -43,21 +46,20 @@ def cleanup_workspace():
     #Clean existing workspace 
     if os.path.exists(workspace):
         os.system('rm -rf '+ workspace)
-    else:
-        print('No directory for cleanup')
+
+def backup_workspace(): 
+    bkp_file = 'backup_'+ workspace +'_'+ date_time + 'tar.gz' 
+    os.system('tar -zcvf '+ bkp_file + ' ' + workspace)     
 	
 if __name__ == "__main__":
-    
     if len(sys.argv) >= 3:
         artifactory_api_key = sys.argv[1]
         filename = sys.argv[2]
+        backup_workspace()
         cleanup_workspace()
         artifactory_file_download(filename)
         unzip_package(filename)
         os.remove(filename)
-        print ("success:",len(sys.argv))
     else:
         example = 'python  DevOps-Scripts-Package-Deploy.py <artifactory_token> <git_token>'
         raise Exception(f'Wrong number of arguments. Example usage:\n{example}')
-
-	
