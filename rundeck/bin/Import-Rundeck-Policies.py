@@ -8,6 +8,8 @@ import os
 from zipfile import ZipFile
 
 #Global variables
+x = datetime.datetime.now()
+date_time = x.strftime("%y%m%d%H%M%S")
 workspace = "python_workspace"
 artifactory_api_key = ''
 
@@ -31,7 +33,7 @@ def artifactory_file_download(filename):
         print("File downloaded successfully... Filename:",filename)
     else:
         print("Failed to download file from artifactory. Error code:", response.status_code)
-        print(response.text)
+        raise Exception(response.text)
         
         
 def unzip_package(filename):
@@ -51,7 +53,13 @@ def deploy_rundeck_policies():
     #deploy acl policies in rundeck directory
     deploy_cmd = 'cp ./python_workspace/devops/rundeck/policies/*.aclpolicy /etc/rundeck'
     os.system(deploy_cmd)
-
+        
+def backup_policies():
+    bkp_file = 'backup_policies_'+ date_time +'.tar.gz'
+    bkp_cmd = 'cd /etc/rundeck && tar -zcvf '+ bkp_file +' *.aclpolicy'
+    os.system(bkp_cmd)
+    print("backup file name :",bkp_file)
+    
 def update_policies():
     update_policy_file('rundeck_administrators.aclpolicy','rundeck_administrators')
     update_policy_file('rundeck_read.aclpolicy','rundeck_read')
@@ -69,9 +77,12 @@ def update_policy_file(filename,groupname):
     fin.close()
     
 if __name__ == "__main__":
-    if len(sys.argv) >= 3:
+    if len(sys.argv) >= 4:
         artifactory_api_key = sys.argv[1]
         filename = sys.argv[2]
+        env_type = sys.argv[3]
+        print("Taking backup of existing policies")
+        backup_policies()
         print("Downloading artifact from artifactory")
         artifactory_file_download(filename)
         print("Artifact downloaded successfully")
@@ -79,8 +90,10 @@ if __name__ == "__main__":
         unzip_package(filename)
         print("Removed zip package file")
         os.remove(filename)
-        print("Updated policy groups for prod")
-        update_policies()
+        if env_type == 'prod':
+            print("Updated policy groups for prod")
+            update_policies()
+        
         print("deployed policy files to /etc/rundeck")
         deploy_rundeck_policies()
         cleanup_workspace() 
