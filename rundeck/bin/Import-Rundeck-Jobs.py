@@ -11,7 +11,9 @@ from zipfile import ZipFile
 #global variables
 artifactory_api_key = ''
 Rundeck_Auth_Token = ''
-    
+dir_name = '' 
+zip_filename = ''
+   
 def get_config_values(input_item):
     #Open config files to read values based on keys.
     file_path = os.path.relpath("../config/config.yml")
@@ -21,9 +23,8 @@ def get_config_values(input_item):
 
 def unzip_file(zip_filename):
     #Unzip file
-    dir_name = zip_filename[0:-4]
     with ZipFile(zip_filename, 'r')  as zipObj:
-        zipObj.extractall(path=dir_name)
+        zipObj.extractall(dir_name)
 
     print("Unzip Directory created... - Directory name:",dir_name)    
  
@@ -54,7 +55,7 @@ def download_artifact(artifact_name):
         print("Export Filename::",artifact_name)
     else:
         print("Failed to download file from artifactory. Error code:", response.status_code)
-        print(response.text)
+        raise Exception(response.text)
                     
 def get_project_info(project_name):
     #Set url from config
@@ -92,9 +93,9 @@ def import_jobs(project_name,filename):
     if response.status_code == 200:
         print("Rundeck jobs successfully imported",response.text)
     else:
+        #cleanup_workspace()
         print("Failed to import rundeck jobs. Error code:", response.status_code)
-        print(response.text)
-        exit()
+        raise Exception(response.text)
 
 def create_project(project_name):
     #Set url from config
@@ -121,16 +122,22 @@ def create_project(project_name):
         print("Project_Name::",project_name)  
         print("Project Successfully created...",response.text)    
     else:
+        cleanup_workspace()
         print("Failed to create rundeck project. Error code:", response.status_code)
-        print(response.text)
-        exit()
-          
+        raise Exception(response.text)
+
+def cleanup_workspace():
+    os.system('rm -rf '+ dir_name)
+    os.system('rm -f '+ zip_filename)
+    
 if __name__ == "__main__":
     if len(sys.argv) >= 4:
         artifactory_api_key = sys.argv[1]
         Rundeck_Auth_Token = sys.argv[2]
         zip_filename = sys.argv[3]
+        dir_name = zip_filename[0:-4]
         print("Artifact Name:",zip_filename)
+        print("Directory Name:",dir_name)
         print("Downloading artifact from artifactory")
         download_artifact(zip_filename)
         print("Artifact downloaded successfully")
@@ -140,9 +147,6 @@ if __name__ == "__main__":
         
         print("Import process started")
         listOfiles = get_file_list(zip_filename)
-        
-        dir_name = zip_filename[0:-4]
-        print("Directory Name::",dir_name)
         
         for elem in listOfiles:
             print("File Name::",elem)
@@ -163,10 +167,9 @@ if __name__ == "__main__":
                 print("Import started")
                 import_jobs(project_name,dir_name+'/'+elem)
                 print("Import completed")
-                #os.close(elem)
         print("Import process completed")
-        os.remove(zip_filename)
-        shutil.rmtree(dir_name)
+        #Clean workspace
+        cleanup_workspace()
     else:
         example = 'python  Import-Rundeck-Jobs.py <artifactory_token> <git_token> <zip_filename>'
         raise Exception(f'Wrong number of arguments. Example usage:\n{example}')
