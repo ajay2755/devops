@@ -49,7 +49,7 @@ def artifactory_file_upload():
     else:
         clean_workspace()
         print("upload failed ::",response.status_code)
-        raise Exception((response.text)
+        raise Exception(response.text)
         
 def create_package():
     #Create ZIP package for devops scrips
