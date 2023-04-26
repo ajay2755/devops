@@ -14,16 +14,14 @@
 | devops/rundeck/config | jaas-activedirectory.conf | Active Directory configurations |
 | devops/rundeck/config | resources.yaml | Rundeck node configurations |
 
-# All Rundeck exports will be stored in devops/rundeck/job_exports/ location
+### All Rundeck exports will be stored in devops/rundeck/job_exports/ location
 
-## Rundeck policy groups for Active Directory (AD) - Non-Prod
-rundeck_administrators
-rundeck_read_write_execute_create
-rundeck_read
-rundeck_read_execute
+## Rundeck policies and groups for Active Directory (AD)
 
-## Rundeck policy groups for Active Directory (AD) - Production
-prod_rundeck_administrators
-prod_rundeck_read_write_execute_create
-prod_rundeck_read
-prod_rundeck_read_execute
+| Location | Fiile Name | Non-Prod Group Name |  Prod Group Name  |
+|----------|-------------|-------------|-------------|
+| devops/rundeck/policies | rundeck_administrators.aclpolicy | rundeck_administrators | prod_rundeck_administrators |
+| devops/rundeck/policies | rundeck_read.aclpolicy | rundeck_read | prod_rundeck_read |
+| devops/rundeck/policies | rundeck_read_execute.aclpolicy | rundeck_read_execute | prod_rundeck_read_execute |
+| devops/rundeck/policies | rundeck_read_write_execute_create.aclpolicy | rundeck_read_write_execute_create | prod_rundeck_read_write_execute_create |
+
