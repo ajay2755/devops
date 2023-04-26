@@ -13,3 +13,17 @@
 | devops/rundeck/config | config.yml | Manage all python script configurations |
 | devops/rundeck/config | jaas-activedirectory.conf | Active Directory configurations |
 | devops/rundeck/config | resources.yaml | Rundeck node configurations |
+
+# All Rundeck exports will be stored in devops/rundeck/job_exports/ location
+
+## Rundeck policy groups for Active Directory (AD) - Non-Prod
+rundeck_administrators
+rundeck_read_write_execute_create
+rundeck_read
+rundeck_read_execute
+
+## Rundeck policy groups for Active Directory (AD) - Production
+prod_rundeck_administrators
+prod_rundeck_read_write_execute_create
+prod_rundeck_read
+prod_rundeck_read_execute
