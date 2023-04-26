@@ -14,7 +14,7 @@
 | devops/rundeck/config | jaas-activedirectory.conf | Active Directory configurations |
 | devops/rundeck/config | resources.yaml | Rundeck node configurations |
 
-### All Rundeck export files will be stored in _devops/rundeck/job_exports/_ location
+#### All Rundeck export files will be stored in _devops/rundeck/job_exports/_ location
 
 ## Rundeck policies and groups for Active Directory (AD)
 
