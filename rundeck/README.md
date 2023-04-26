@@ -18,7 +18,7 @@
 
 ## Rundeck policies and groups for Active Directory (AD)
 
-| Location | Fiile Name | Non-Prod Group Name |  Prod Group Name  |
+| Location | File Name | Non-Prod AD Groups |  Prod AD Groups  |
 |----------|-------------|-------------|-------------|
 | devops/rundeck/policies | rundeck_administrators.aclpolicy | rundeck_administrators | prod_rundeck_administrators |
 | devops/rundeck/policies | rundeck_read.aclpolicy | rundeck_read | prod_rundeck_read |
