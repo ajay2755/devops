@@ -1,6 +1,6 @@
 ## Python Scripts
 | Location | Script Name |  Parameter | Description |
-|----------|-------------|-------------|-------------|-------------|
+|----------|-------------|-------------|-------------|
 | devops/rundeck/bin | DevOps-Scripts-Package-Deploy.py | artifactory-api-key zip-file-name | Deploy all devops scripts from artifactory to rundeck executor node |
 | devops/rundeck/bin | DevOps-Scripts-Package-Upload.py | artifactory-api-key git-api-token | Upload all devops repo scripts from git to artifactory |
 | devops/rundeck/bin | Export-Rundeck-Jobs.py | artifactory-api-key rundeck_token projects git-token git-user rundeck-runid | Export rundeck jobs and upload in artifactory |
